@@ -1,5 +1,10 @@
 # Ignore Python cache files
 __pycache__/
+*/__pycache__/
+*/*/__pycache__/
+
+# Ignore VS Code settings
+.vscode/
 
 # Ignore chat history files
 chat_histories/
