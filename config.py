@@ -33,7 +33,17 @@ class Config:
     OCR_CONFIDENCE_THRESHOLD = 0.6  # OCR识别置信度阈值
     
     # DeepSeek API配置
-    DEEPSEEK_API_KEY = "sk-96631c20650f46ae80015183d99e5529"  # 需要填入你的DeepSeek API密钥
+    # 从环境变量读取API密钥，提高安全性
+    DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+    if not DEEPSEEK_API_KEY:
+        # 如果环境变量未设置，记录错误并可能引发异常或退出
+        error_message = "错误：环境变量 DEEPSEEK_API_KEY 未设置。请设置该环境变量以使用DeepSeek API。"
+        logger.error(error_message)
+        # 根据需要，可以选择在这里引发异常或退出程序
+        # raise ValueError(error_message) 
+        # 或者 sys.exit(error_message) # 需要 import sys
+        # 目前仅记录错误，允许程序继续运行（但API调用会失败）
+        
     DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
     
     # 微信窗口相关
