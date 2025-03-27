@@ -4,6 +4,7 @@
 """
 微信机器人主模块
 整合各个模块的功能，实现机器人的主要逻辑
+注意：仅在微信窗口未最小化时工作
 """
 
 import time
@@ -165,7 +166,7 @@ class WeChatBot:
         
         try:
             while True:
-                # 截取微信窗口（即使最小化也能截图）
+                # 截取微信窗口（如果窗口最小化则跳过截图）
                 screenshot = self.window_manager.capture_wechat_screen()
                 
                 if screenshot is not None:
@@ -178,9 +179,6 @@ class WeChatBot:
                     if sender and question:
                         logger.info("检测到需要回复的消息，准备回复...")
                         
-                        # 检查窗口是否最小化
-                        is_minimized = self.window_manager.is_window_minimized()
-                        
                         # 生成回复
                         response = self.api_client.generate_response(
                             sender, 
@@ -192,14 +190,8 @@ class WeChatBot:
                         # 添加到聊天历史
                         self.chat_history_manager.add_chat(sender, question, response)
                         
-                        # 发送回复（send_message方法会自动恢复窗口）
+                        # 发送回复
                         self.send_message(response)
-                        
-                        # 如果窗口之前是最小化的，回复后再次最小化
-                        if is_minimized:
-                            logger.info("回复完成，重新最小化窗口...")
-                            time.sleep(1.0)  # 等待一段时间，确保消息已发送
-                            self.window_manager.minimize_window()
                 
                 # 等待一段时间再次截图
                 time.sleep(Config.SCREENSHOT_INTERVAL)

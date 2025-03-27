@@ -92,6 +92,14 @@ class WindowManager:
             if not self.wechat_hwnd:
                 return None
         
+        # 检查窗口是否最小化
+        is_minimized = self.is_window_minimized()
+        
+        # 如果窗口最小化，则不进行截图
+        if is_minimized:
+            logger.info("微信窗口已最小化，跳过截图")
+            return None
+        
         # 获取窗口位置
         rect = self.get_window_rect()
         if not rect:
@@ -101,47 +109,13 @@ class WindowManager:
         left, top, right, bottom = rect
         width, height = right - left, bottom - top
         
-        # 检查窗口是否最小化
-        is_minimized = self.is_window_minimized()
-        
         try:
-            # 如果窗口最小化，临时恢复窗口进行截图，然后再最小化
-            if is_minimized:
-                logger.debug("微信窗口已最小化，临时恢复窗口进行截图")
-                # 记录窗口原始状态
-                original_state = win32gui.IsIconic(self.wechat_hwnd)
-                
-                # 临时恢复窗口
-                win32gui.ShowWindow(self.wechat_hwnd, win32con.SW_RESTORE)
-                time.sleep(0.2)  # 等待窗口恢复
-                
-                # 获取恢复后的窗口位置（可能与最小化前不同）
-                rect = self.get_window_rect()
-                if not rect:
-                    logger.error("获取恢复后窗口位置失败")
-                    return None
-                
-                left, top, right, bottom = rect
-                width, height = right - left, bottom - top
-                
-                # 截图
-                screenshot = pyautogui.screenshot(region=(left, top, width, height))
-                screenshot = np.array(screenshot)
-                screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
-                
-                # 恢复窗口到原始状态
-                if original_state:
-                    win32gui.ShowWindow(self.wechat_hwnd, win32con.SW_MINIMIZE)
-                
-                logger.debug(f"成功截取临时恢复的窗口截图，尺寸: {width}x{height}")
-                return screenshot
-            else:
-                # 窗口未最小化，正常截图
-                screenshot = pyautogui.screenshot(region=(left, top, width, height))
-                screenshot = np.array(screenshot)
-                screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
-                logger.debug(f"成功截取微信窗口截图，尺寸: {width}x{height}")
-                return screenshot
+            # 窗口未最小化，正常截图
+            screenshot = pyautogui.screenshot(region=(left, top, width, height))
+            screenshot = np.array(screenshot)
+            screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
+            logger.debug(f"成功截取微信窗口截图，尺寸: {width}x{height}")
+            return screenshot
         except Exception as e:
             logger.error(f"截图失败: {e}")
             return None
