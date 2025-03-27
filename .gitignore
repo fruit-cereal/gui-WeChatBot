@@ -13,3 +13,7 @@ chat_histories/
 *.log
 wechat.log
 wechat_bot.log
+
+# Ignore config file but keep example
+config.py
+!config_example.py

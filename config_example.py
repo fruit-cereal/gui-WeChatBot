@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-微信机器人配置文件
+微信机器人配置文件示例
 包含所有配置参数和角色设定
+实际使用时请复制此文件为 config.py 并填入自己的配置
 """
 
 import logging
@@ -45,22 +46,21 @@ class Config:
     DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
     
     # 微信窗口相关
-    WECHAT_WINDOW_NAME = "潘圣伟大"  # 微信窗口标题（可能需要调整）
-    WECHAT_WINDOW_NAME_ALIASES = ["潘圣伟大", "潘圣伟1大", "潘圣伟I大", "潘圣伟l大", "潘圣伟 大"]  # 微信窗口标题的可能OCR识别变体
+    WECHAT_WINDOW_NAME = "你的微信窗口名称"  # 微信窗口标题（请修改为自己的）
+    WECHAT_WINDOW_NAME_ALIASES = ["微信窗口别名1", "微信窗口别名2"]  # 微信窗口标题的可能OCR识别变体
     
     # 聊天框和发送按钮的相对位置（需要根据实际情况调整）
     # 这些值是相对于窗口的百分比位置
     CHAT_INPUT_BOX_RELATIVE_X = 0.5  # 聊天输入框的X坐标（窗口宽度的百分比）
-    # CHAT_INPUT_BOX_RELATIVE_Y = 0.85
-    CHAT_INPUT_BOX_RELATIVE_Y = 0.88  # 聊天输入框的Y坐标（窗口高度的百分比）- 调高了位置
+    CHAT_INPUT_BOX_RELATIVE_Y = 0.88  # 聊天输入框的Y坐标（窗口高度的百分比）
     SEND_BUTTON_RELATIVE_X = 0.95  # 发送按钮的X坐标（窗口宽度的百分比）
-    SEND_BUTTON_RELATIVE_Y = 0.85  # 发送按钮的Y坐标（窗口高度的百分比）- 同样调高
+    SEND_BUTTON_RELATIVE_Y = 0.85  # 发送按钮的Y坐标（窗口高度的百分比）
     
     # 聊天历史相关
     CHAT_HISTORY_DIR = "chat_histories"
     MAX_HISTORY_LENGTH = 20  # 内存中保存的最大对话轮数
     MAX_API_HISTORY_LENGTH = 10  # 发送给API的最大对话轮数
-    DUPLICATE_CHECK_HISTORY_LENGTH = 0  # 检查重复问题时往前查找的对话轮数，设为0表示禁用重复检查
+    DUPLICATE_CHECK_HISTORY_LENGTH = 5  # 检查重复问题时往前查找的对话轮数，设为0表示禁用重复检查
     
     @classmethod
     def get_role_system_prompt(cls, role):
