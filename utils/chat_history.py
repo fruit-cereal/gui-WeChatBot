@@ -154,6 +154,10 @@ class ChatHistoryManager:
     
     def is_question_already_answered(self, question):
         """检查问题是否在历史记录中已经出现过"""
+        # 如果DUPLICATE_CHECK_HISTORY_LENGTH为0，表示不进行重复检查
+        if Config.DUPLICATE_CHECK_HISTORY_LENGTH <= 0:
+            return False
+            
         # 只检查最近的几轮对话，数量由配置文件中的DUPLICATE_CHECK_HISTORY_LENGTH决定
         check_length = min(Config.DUPLICATE_CHECK_HISTORY_LENGTH, len(self.chat_history))
         recent_chats = self.chat_history[-check_length:]

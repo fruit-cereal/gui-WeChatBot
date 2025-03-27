@@ -61,7 +61,7 @@ class Config:
     CHAT_HISTORY_DIR = "chat_histories"
     MAX_HISTORY_LENGTH = 20  # 内存中保存的最大对话轮数
     MAX_API_HISTORY_LENGTH = 10  # 发送给API的最大对话轮数
-    DUPLICATE_CHECK_HISTORY_LENGTH = 5  # 检查重复问题时往前查找的对话轮数
+    DUPLICATE_CHECK_HISTORY_LENGTH = 0  # 检查重复问题时往前查找的对话轮数，设为0表示禁用重复检查
     
     @classmethod
     def get_role_system_prompt(cls, role):
