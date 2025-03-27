@@ -39,10 +39,8 @@ class Config:
         # 如果环境变量未设置，记录错误并可能引发异常或退出
         error_message = "错误：环境变量 DEEPSEEK_API_KEY 未设置。请设置该环境变量以使用DeepSeek API。"
         logger.error(error_message)
-        # 根据需要，可以选择在这里引发异常或退出程序
-        # raise ValueError(error_message) 
-        # 或者 sys.exit(error_message) # 需要 import sys
-        # 目前仅记录错误，允许程序继续运行（但API调用会失败）
+        raise ValueError(error_message) 
+
         
     DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
     
