@@ -3,3 +3,4 @@ __pycache__/
 
 # Ignore chat history files
 chat_histories/
+wechat_bot.log
