@@ -173,6 +173,12 @@ class WeChatBot:
                     # 识别文字
                     texts = self.ocr_handler.recognize_text(screenshot)
                     
+                    # 检查是否识别到微信窗口名称
+                    if not self.ocr_handler.detect_wechat_window_name(texts):
+                        logger.warning("未检测到微信窗口名称，可能是微信窗口被其他窗口遮挡，跳过后续处理")
+                        time.sleep(Config.SCREENSHOT_INTERVAL)
+                        continue
+                    
                     # 检测触发词
                     sender, question = self.detect_trigger(texts)
                     

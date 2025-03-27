@@ -16,6 +16,23 @@ class OCRHandler:
         logger.info("正在初始化PaddleOCR引擎...")
         self.ocr = PaddleOCR(use_angle_cls=True, lang="ch", use_gpu=False)
         logger.info("PaddleOCR引擎初始化完成")
+        
+    def detect_wechat_window_name(self, texts):
+        """检测OCR识别结果中是否包含微信窗口名称或其别名"""
+        for text, confidence, _ in texts:
+            # 检查主窗口名称
+            if Config.WECHAT_WINDOW_NAME in text:
+                logger.info(f"检测到微信窗口名称：'{Config.WECHAT_WINDOW_NAME}'")
+                return True
+            
+            # 检查别名
+            for alias in Config.WECHAT_WINDOW_NAME_ALIASES:
+                if alias in text:
+                    logger.info(f"检测到微信窗口名称别名：'{alias}'")
+                    return True
+        
+        logger.warning(f"OCR识别结果中未包含微信窗口名称或其别名，可能是微信窗口被其他窗口遮挡")
+        return False
     
     def recognize_text(self, image):
         """使用PaddleOCR识别图像中的文字"""
