@@ -52,7 +52,8 @@ class Config:
     # 聊天框和发送按钮的相对位置（需要根据实际情况调整）
     # 这些值是相对于窗口的百分比位置
     CHAT_INPUT_BOX_RELATIVE_X = 0.5  # 聊天输入框的X坐标（窗口宽度的百分比）
-    CHAT_INPUT_BOX_RELATIVE_Y = 0.85  # 聊天输入框的Y坐标（窗口高度的百分比）- 调高了位置
+    # CHAT_INPUT_BOX_RELATIVE_Y = 0.85
+    CHAT_INPUT_BOX_RELATIVE_Y = 0.88  # 聊天输入框的Y坐标（窗口高度的百分比）- 调高了位置
     SEND_BUTTON_RELATIVE_X = 0.95  # 发送按钮的X坐标（窗口宽度的百分比）
     SEND_BUTTON_RELATIVE_Y = 0.85  # 发送按钮的Y坐标（窗口高度的百分比）- 同样调高
     
