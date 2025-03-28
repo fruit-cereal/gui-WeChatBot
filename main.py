@@ -7,7 +7,7 @@
 注意：仅在微信窗口未最小化时工作。
 """
 
-from bot import WeChatBot
+from core.bot import WeChatBot
 
 if __name__ == "__main__":
     # 创建并运行微信机器人

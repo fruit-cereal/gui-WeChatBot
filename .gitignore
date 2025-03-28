@@ -9,10 +9,8 @@ __pycache__/
 # Ignore chat history files
 chat_histories/
 
-# Ignore log files
-*.log
-wechat.log
-wechat_bot.log
+# Ignore log files and directory
+log/
 
-# Ignore config file
-config.py
+# Ignore real config files but not example config
+config/

@@ -13,7 +13,7 @@ import pyautogui
 import win32gui
 import win32con
 import cv2
-from config import Config, logger
+from config import logger, Config
 
 class WindowManager:
     def __init__(self):

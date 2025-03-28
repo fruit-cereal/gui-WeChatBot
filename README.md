@@ -26,19 +26,42 @@
 - **`main.py`** - 程序入口
   - 导入WeChatBot类并创建实例
   - 启动机器人运行流程
-  
-- **`bot.py`** - 机器人核心逻辑
+
+### 核心模块 (`core/`)
+
+- **`core/bot.py`** - 机器人核心逻辑
   - 实现WeChatBot类，整合各模块功能
-  - 监测@消息并提取问题内容
-  - 生成并发送回复消息
-  - 管理窗口状态与消息发送流程
-  - 防止重复回复相同问题
+  - 管理窗口状态与主循环
+  - 协调消息检测、生成回复和发送消息的流程
   
-- **`config.py`** - 配置管理
+- **`core/message_detector.py`** - 消息检测模块
+  - 检测OCR识别结果中的触发词
+  - 提取问题内容和发送者信息
+  - 切换到对应的角色
+  - 防止重复回复相同问题
+
+- **`core/message_sender.py`** - 消息发送模块
+  - 通过模拟键盘和鼠标操作发送消息
+  - 处理消息粘贴和发送操作
+  - 添加随机延迟模拟真人行为
+
+### 配置模块 (`config/`)
+
+- **`config/__init__.py`** - 配置模块初始化
+  - 导入和导出logger和Config类
+  - 提供统一的配置访问接口
+
+- **`config/settings.py`** - 应用程序设置
   - 定义Config类，统一管理全局配置
   - 加载角色配置与系统提示词
   - 设置API参数、窗口参数、截图区域
-  - 配置日志系统
+  
+- **`config/logger.py`** - 日志配置
+  - 配置日志记录器
+  - 实现自定义日志过滤器
+  - 设置日志格式和输出
+
+> **注意**：项目使用了模块化的配置结构，将原来的单一config.py文件拆分为config文件夹，便于维护和扩展。为方便新用户配置和避免上传真实配置到代码仓库，项目提供了config_example文件夹作为配置模板。使用时，请复制config_example文件夹为config文件夹，并按照说明修改必要的配置项。
 
 ### 工具模块 (`utils/`)
 
@@ -154,17 +177,27 @@
    pip install -r requirements.txt
    ```
 
-3. **配置环境变量**
+3. **配置机器人**
+   - 复制示例配置文件夹为实际配置文件夹：
+     ```bash
+     cp -r config_example config
+     ```
    - 设置DeepSeek API密钥环境变量：
      - Windows: `set DEEPSEEK_API_KEY=your_api_key_here`
      - Linux/Mac: `export DEEPSEEK_API_KEY=your_api_key_here`
-   - 或将密钥添加到系统环境变量中以永久保存
+   - 或将密钥直接添加到配置文件中：
+     - 打开`config/settings.py`，找到`DEEPSEEK_API_KEY`设置项
+     - 将其修改为：`DEEPSEEK_API_KEY = "your_api_key_here"`
 
 4. **调整配置参数**
-   - 打开`config.py`，根据需要调整如下参数：
-     - `WECHAT_WINDOW_NAME`：微信窗口标题
-     - `CHAT_INPUT_BOX_RELATIVE_X/Y`：聊天输入框的相对位置
+   - 打开`config/settings.py`，根据需要调整如下参数：
+     - `WECHAT_WINDOW_NAME`：微信窗口标题（必须修改为你的微信群名称）
+     - `WECHAT_WINDOW_NAME_ALIASES`：微信窗口标题的可能OCR识别变体
+     - `CHAT_INPUT_BOX_RELATIVE_X/Y`：聊天输入框的相对位置（必须根据你的屏幕分辨率调整）
+     - `SEND_BUTTON_RELATIVE_X/Y`：发送按钮的相对位置
      - `SCREENSHOT_INTERVAL`：截图间隔时间
+   - 配置用户名识别（推荐）：
+     - 在`USER_NAMES`列表中添加群成员的名称和可能的OCR识别变体
 
 ### 首次运行
 
@@ -211,7 +244,7 @@
 
 ### 调整OCR参数
 
-在`config.py`中修改OCR相关参数：
+在`config/settings.py`中修改OCR相关参数：
 ```python
 OCR_CONFIDENCE_THRESHOLD = 0.6  # 提高或降低以调整识别精度
 ```
@@ -237,7 +270,7 @@ CHAT_INPUT_BOX_RELATIVE_Y = 0.88  # 聊天输入框的Y坐标（窗口高度的�
 
 ### 配置用户名识别系统
 
-在`config.py`中配置群成员名称及其可能的OCR识别别名：
+在`config/settings.py`中配置群成员名称及其可能的OCR识别别名：
 ```python
 USER_NAMES = [
     {
@@ -261,7 +294,7 @@ DUPLICATE_CHECK_HISTORY_LENGTH = 5
 
 ## 📝 注意事项
 
-1. **窗口位置**：首次使用或更换显示器/分辨率后，可能需要重新调整`config.py`中的窗口位置参数
+1. **窗口位置**：首次使用或更换显示器/分辨率后，可能需要重新调整`config/settings.py`中的窗口位置参数
 
 2. **资源占用**：OCR识别会消耗一定的系统资源，请合理设置截图间隔
 

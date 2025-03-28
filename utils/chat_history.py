@@ -10,7 +10,7 @@ import os
 import re
 import json
 from datetime import datetime
-from config import Config, logger
+from config import logger, Config
 
 class ChatHistoryManager:
     def __init__(self):

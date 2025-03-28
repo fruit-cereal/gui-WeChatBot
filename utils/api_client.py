@@ -8,7 +8,7 @@ API客户端模块
 
 import json
 import requests
-from config import Config, logger
+from config import logger, Config
 
 class APIClient:
     def __init__(self):

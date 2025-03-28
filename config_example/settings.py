@@ -2,116 +2,18 @@
 # -*- coding: utf-8 -*-
 
 """
-微信机器人配置文件示例
-=====================
+应用程序设置模块示例
+包含所有配置参数和角色设定
 
 【使用说明】
-1. 请复制此文件为 config.py
+1. 请复制此文件到 config 文件夹中
 2. 修改下面标记为【必须修改】的配置项
 3. 根据需要调整其他配置项
-
-【配置步骤】
-1. 设置DeepSeek API密钥（必须）
-2. 设置微信窗口名称（必须）
-3. 调整聊天输入框和发送按钮的位置（必须，需要根据自己的屏幕分辨率调整）
-4. 配置群成员名称和别名（可选，但推荐设置）
-5. 调整其他配置参数（可选）
 """
 
-import logging
 import os
-from logging.handlers import TimedRotatingFileHandler
 from roles import load_all_roles
-
-# ===========================
-# 【日志配置】
-# ===========================
-# 每日创建新的日志文件，保存在log目录下
-
-# 确保日志目录存在
-os.makedirs("log", exist_ok=True)
-
-# 创建一个自定义的日志过滤器，根据消息内容决定是否记录到文件
-class OCRLogFilter(logging.Filter):
-    def __init__(self):
-        super().__init__()
-        # 标记是否找到触发词并需要开始记录OCR结果
-        self.trigger_found = False
-        # 标记是否正在记录OCR识别结果
-        self.recording_ocr = False
-    
-    def filter(self, record):
-        # 始终允许非OCR识别结果的日志通过（初始化、错误等信息）
-        if "OCR识别结果:" not in record.msg and not self.recording_ocr:
-            return True
-        
-        # 如果消息包含"检测到触发词"，开始记录OCR
-        if "检测到触发词" in record.msg:
-            self.trigger_found = True
-            return True
-        
-        # 标记OCR识别结果的开始
-        if "OCR识别结果:" in record.msg:
-            self.recording_ocr = True
-            # 只有在找到触发词后才记录OCR识别结果
-            return self.trigger_found
-        
-        # 处理OCR识别的文本行
-        if self.recording_ocr and "文本:" in record.msg:
-            # 只有在找到触发词后才记录OCR识别结果
-            return self.trigger_found
-        
-        # 标记OCR识别结果的结束，重置状态
-        if self.recording_ocr and "文本:" not in record.msg:
-            self.recording_ocr = False
-            
-        # 如果消息包含"消息已发送"，表示一轮交互结束，重置触发词标记
-        if "消息已发送" in record.msg:
-            self.trigger_found = False
-            
-        return True
-
-# 创建一个logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-# 创建一个格式化器
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-
-# 创建一个控制台处理器（不过滤，所有信息都输出到控制台）
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-console_handler.setFormatter(formatter)
-
-# 自定义日志文件名格式，基于当前日期
-def get_log_filename():
-    """根据当前日期生成日志文件名"""
-    from datetime import datetime
-    today = datetime.now().strftime("%Y-%m-%d")
-    return os.path.join("log", f"{today}-bot-log.log")
-
-# 创建一个文件处理器（使用过滤器，只记录符合条件的信息）
-file_handler = TimedRotatingFileHandler(
-    filename=get_log_filename(),  # 使用日期格式化的文件名
-    when="midnight",
-    interval=1,
-    backupCount=30,  # 保留30天的日志
-    encoding='utf-8'
-)
-file_handler.setLevel(logging.INFO)
-file_handler.setFormatter(formatter)
-
-# 创建并添加过滤器到文件处理器
-ocr_filter = OCRLogFilter()
-file_handler.addFilter(ocr_filter)
-
-# 添加处理器到logger
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
-
-# 阻止日志传递到父logger
-logger.propagate = False
-
+from config_example.logger import logger
 
 class Config:
     # ===========================
@@ -188,11 +90,11 @@ class Config:
     
     # 【必须修改】设置你的微信窗口标题（即微信群名称）
     # 可以在运行微信时查看窗口标题栏确定正确的名称
-    WECHAT_WINDOW_NAME = "群名称"
+    WECHAT_WINDOW_NAME = "你的微信群名称"
     
     # 微信窗口标题可能的OCR识别变体
     # 【推荐修改】如果程序无法找到微信窗口，可以添加可能的OCR识别变体
-    WECHAT_WINDOW_NAME_ALIASES = ["微群名称1", "群名称2", "群名称3"]
+    WECHAT_WINDOW_NAME_ALIASES = ["你的微信群名称1", "你的微信群名称2", "你的微信群名称3"]
     
     # ===========================
     # 【聊天框位置配置】
@@ -254,8 +156,7 @@ class Config:
         # 对于未知角色，使用默认提示词
         return default_prompt
 
-
-# 确保聊天历史目录存在（通常不需要修改）
+# 确保聊天历史目录存在
 os.makedirs(Config.CHAT_HISTORY_DIR, exist_ok=True)
 
 # ===========================
@@ -269,7 +170,7 @@ if __name__ == "__main__":
     else:
         print("✗ 请设置DeepSeek API密钥")
     
-    if Config.WECHAT_WINDOW_NAME != "微信窗口名称" and Config.WECHAT_WINDOW_NAME != "你的微信窗口名称":
+    if Config.WECHAT_WINDOW_NAME != "你的微信群名称":
         print("✓ 微信窗口名称已设置")
     else:
         print("✗ 请设置正确的微信窗口名称")

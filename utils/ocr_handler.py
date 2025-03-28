@@ -8,7 +8,7 @@ OCR处理模块
 
 import logging
 from paddleocr import PaddleOCR
-from config import Config, logger
+from config import logger, Config
 
 class OCRHandler:
     def __init__(self):
@@ -84,10 +84,25 @@ class OCRHandler:
             logger.info("没有上一次OCR识别结果，无法推断发送者名称")
             return None
         
-        # 选择上一次识别结果中的第一项作为可能的发送者名称
-        # 通常，微信中消息的格式是：[发送者名称] [消息内容]
-        # 所以最近识别结果中可能包含发送者名称
-        possible_sender = self.last_recognized_texts[0][0]
+        # 查找当前OCR结果中包含触发词的项
+        trigger_index = -1
+        for index, (text, _, _) in enumerate(self.last_recognized_texts):
+            # 检查是否包含任何角色的触发词
+            for role in Config.ROLES:
+                if role["name"] in text or any(alias in text for alias in role["aliases"]):
+                    trigger_index = index
+                    break
+            if trigger_index != -1:
+                break
+        
+        if trigger_index == -1 or trigger_index == 0:
+            logger.info("无法在OCR结果中找到触发词或触发词位于第一项，使用默认推断方式")
+            # 退回到原来的方法：使用第一项作为可能的发送者
+            possible_sender = self.last_recognized_texts[0][0]
+        else:
+            # 使用触发词上一条消息作为发送者名称
+            possible_sender = self.last_recognized_texts[trigger_index - 1][0]
+            
         logger.info(f"从上一次OCR识别结果推断可能的发送者名称: '{possible_sender}'")
         
         # 验证推断的名称是否在配置的用户名列表中
