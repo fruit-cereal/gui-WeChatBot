@@ -46,7 +46,7 @@ class APIClient:
                 messages.append({"role": "assistant", "content": chat['response']})
             
             # 添加当前问题
-            messages.append({"role": "user", "content": f"{sender}: {question}"})
+            messages.append({"role": "user", "content": f"{question}"})
             
             data = {
                 "model": "deepseek-chat",
