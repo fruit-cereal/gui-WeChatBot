@@ -15,6 +15,8 @@ class OCRHandler:
         """初始化OCR处理器"""
         logger.info("正在初始化PaddleOCR引擎...")
         self.ocr = PaddleOCR(use_angle_cls=True, lang="ch", use_gpu=False)
+        # 存储最近识别的文本结果，用于推断消息发送者
+        self.last_recognized_texts = []
         logger.info("PaddleOCR引擎初始化完成")
         
     def detect_wechat_window_name(self, texts):
@@ -56,6 +58,9 @@ class OCRHandler:
                 if confidence >= Config.OCR_CONFIDENCE_THRESHOLD:
                     texts.append((text, confidence, line[0]))  # 文本、置信度、位置
             
+            # 保存当前识别结果，用于下次推断发送者
+            self.last_recognized_texts = texts.copy()
+            
             return texts
         except Exception as e:
             logger.error(f"OCR识别失败: {e}")
@@ -72,3 +77,33 @@ class OCRHandler:
         
         # 如果下一行的y坐标大于当前行的最大y坐标，则认为是下一行
         return next_y_min > current_y_max
+    
+    def infer_sender_name(self):
+        """根据上一次OCR识别结果推断可能的发送者名称"""
+        if not self.last_recognized_texts:
+            logger.info("没有上一次OCR识别结果，无法推断发送者名称")
+            return None
+        
+        # 选择上一次识别结果中的第一项作为可能的发送者名称
+        # 通常，微信中消息的格式是：[发送者名称] [消息内容]
+        # 所以最近识别结果中可能包含发送者名称
+        possible_sender = self.last_recognized_texts[0][0]
+        logger.info(f"从上一次OCR识别结果推断可能的发送者名称: '{possible_sender}'")
+        
+        # 验证推断的名称是否在配置的用户名列表中
+        if hasattr(Config, 'USER_NAMES') and Config.USER_NAMES:
+            # 检查主名称
+            for user in Config.USER_NAMES:
+                if possible_sender == user['name']:
+                    logger.info(f"推断的发送者名称 '{possible_sender}' 匹配用户列表中的主名称")
+                    return possible_sender
+                
+                # 检查别名
+                if 'aliases' in user and user['aliases']:
+                    for alias in user['aliases']:
+                        if possible_sender == alias:
+                            logger.info(f"推断的发送者名称 '{possible_sender}' 匹配用户 '{user['name']}' 的别名")
+                            return user['name']  # 返回主名称而不是别名
+        
+        logger.info(f"推断的发送者名称 '{possible_sender}' 不在配置的用户名列表中，将使用默认用户名")
+        return None  # 如果没有匹配，返回None

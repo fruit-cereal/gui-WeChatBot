@@ -68,14 +68,26 @@ class WeChatBot:
                 if role_name != self.chat_history_manager.current_role:
                     self.chat_history_manager.switch_role(role_name)
                 
-                # 尝试提取发送者名称（通常在@前面）
-                sender = "用户"  # 默认发送者名称
-                trigger_pos = text.find(trigger_word)
-                if trigger_pos > 0:
-                    # 尝试从文本中提取发送者名称
-                    possible_sender = text[:trigger_pos].strip()
-                    if possible_sender:
-                        sender = possible_sender
+                # 尝试从上一条OCR识别结果推断发送者名称
+                inferred_sender = self.ocr_handler.infer_sender_name()
+                
+                # 如果能够从上一条OCR结果中推断出发送者名称，则使用它
+                if inferred_sender:
+                    sender = inferred_sender
+                else:
+                    # 如果无法推断，尝试从当前文本中提取发送者名称
+                    sender = Config.DEFAULT_USER_NAME  # 默认发送者名称
+                    trigger_pos = text.find(trigger_word)
+                    if trigger_pos > 0:
+                        # 尝试从文本中提取发送者名称
+                        possible_sender = text[:trigger_pos].strip()
+                        if possible_sender:
+                            # 验证提取的名称是否在配置的用户名列表中
+                            for user in Config.USER_NAMES:
+                                if possible_sender == user['name'] or (
+                                    'aliases' in user and possible_sender in user['aliases']):
+                                    sender = user['name']
+                                    break
                 
                 # 提取@后面的内容
                 after_trigger = text[text.find(trigger_word) + len(trigger_word):].strip()
@@ -95,9 +107,9 @@ class WeChatBot:
                 if after_trigger:
                     # 检查是否与上一次相同，避免重复回复
                     if after_trigger != self.last_message:
-                        # 检查问题是否在历史记录中已经出现过
-                        if self.chat_history_manager.is_question_already_answered(after_trigger):
-                            logger.info(f"问题'{after_trigger}'已在历史记录中出现过，继续检查后续问题")
+                        # 检查问题是否在历史记录中已经出现过（考虑发送者）
+                        if self.chat_history_manager.is_question_already_answered(after_trigger, sender):
+                            logger.info(f"用户'{sender}'的问题'{after_trigger}'已在历史记录中出现过，继续检查后续问题")
                             continue  # 继续检查后续问题，而不是直接返回None
                         
                         self.last_message = after_trigger

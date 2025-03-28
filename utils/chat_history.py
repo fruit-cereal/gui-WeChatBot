@@ -152,8 +152,16 @@ class ChatHistoryManager:
         # 如果相似度超过阈值，认为是相似问题
         return similarity > 0.8
     
-    def is_question_already_answered(self, question):
-        """检查问题是否在历史记录中已经出现过"""
+    def is_question_already_answered(self, question, sender=None):
+        """检查问题是否在历史记录中已经出现过
+        
+        Args:
+            question: 要检查的问题
+            sender: 问题的发送者，如果为None则忽略发送者检查
+            
+        Returns:
+            bool: 如果同一发送者的相似问题已存在则返回True，否则返回False
+        """
         # 如果DUPLICATE_CHECK_HISTORY_LENGTH为0，表示不进行重复检查
         if Config.DUPLICATE_CHECK_HISTORY_LENGTH <= 0:
             return False
@@ -165,6 +173,17 @@ class ChatHistoryManager:
         for chat in recent_chats:
             # 使用简单的相似度检查，如果问题相似度超过80%，则认为是相同问题
             if self.is_similar_question(question, chat['question']):
-                logger.info(f"问题'{question}'与最近{check_length}轮对话中的问题'{chat['question']}'相似")
-                return True
+                # 如果提供了发送者，只有当发送者相同时才视为重复
+                if sender is not None:
+                    if chat['sender'] == sender:
+                        logger.info(f"用户'{sender}'的问题'{question}'与其最近{check_length}轮对话中的问题'{chat['question']}'相似")
+                        return True
+                    else:
+                        logger.info(f"问题'{question}'虽与历史中的'{chat['question']}'相似，但发送者不同（当前：{sender}，历史：{chat['sender']}），允许回答")
+                        continue
+                else:
+                    # 如果没有提供发送者，保持原有行为
+                    logger.info(f"问题'{question}'与最近{check_length}轮对话中的问题'{chat['question']}'相似")
+                    return True
+        
         return False
