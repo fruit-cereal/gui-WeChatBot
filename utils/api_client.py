@@ -44,10 +44,13 @@ class APIClient:
             for chat in chat_history:
                 messages.append({"role": "user", "content": f"{chat['sender']}: {chat['question']}"})
                 messages.append({"role": "assistant", "content": chat['response']})
-            
-            # 添加当前问题
-            messages.append({"role": "user", "content": f"{question}"})
-            
+                
+            if sender != "未知用户":
+                # 添加当前问题
+                messages.append({"role": "user", "content": f"{sender}: {question}"})
+            else:
+                messages.append({"role": "user", "content": f"{question}"})
+                
             data = {
                 "model": "deepseek-chat",
                 "messages": messages,
