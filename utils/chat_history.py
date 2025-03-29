@@ -15,10 +15,9 @@ from config import logger, Config
 class ChatHistoryManager:
     def __init__(self):
         """初始化聊天历史管理器"""
-        # 存储聊天记录作为上下文，本地保存无限轮对话，但API只发送最近20轮
+        # 存储聊天记录作为上下文，本地保存无限轮对话，但内存中只保留最近几轮
         self.chat_history = []
-        self.max_history_length = Config.MAX_HISTORY_LENGTH  # 内存中保存的最大对话轮数
-        self.max_api_history_length = Config.MAX_API_HISTORY_LENGTH  # 发送给API的最大对话轮数
+        self.max_api_history_length = Config.MAX_API_HISTORY_LENGTH  # 内存和API中保存的最大对话轮数
         
         # 创建对话历史文件目录
         self.chat_history_dir = Config.CHAT_HISTORY_DIR
@@ -74,11 +73,10 @@ class ChatHistoryManager:
                 with open(self.chat_history_file, 'r', encoding='utf-8') as f:
                     self.chat_history = json.load(f)
                 logger.info(f"成功从{self.chat_history_file}加载了{len(self.chat_history)}轮历史对话")
-                
-                # 如果内存中的历史记录超过最大长度，只保留最新的部分
-                if len(self.chat_history) > self.max_history_length:
-                    self.chat_history = self.chat_history[-self.max_history_length:]
-                    logger.info(f"历史对话超过最大长度，只保留最新的{self.max_history_length}轮对话")
+                # 只在内存中保留最新的几轮对话
+                if len(self.chat_history) > self.max_api_history_length:
+                    self.chat_history = self.chat_history[-self.max_api_history_length:]
+                    logger.info(f"内存中只保留最新的{self.max_api_history_length}轮对话")
             else:
                 logger.info(f"未找到角色'{self.current_role}'的历史对话文件，将创建新的对话历史")
                 self.chat_history = []
@@ -113,7 +111,7 @@ class ChatHistoryManager:
         self.chat_history.append(new_chat)
         
         # 如果内存中的历史记录超过最大长度，删除最早的对话
-        if len(self.chat_history) > self.max_history_length:
+        if len(self.chat_history) > self.max_api_history_length:
             removed = self.chat_history.pop(0)
             logger.info(f"内存中历史记录已达到最大长度，删除最早的对话: {removed['sender']}: {removed['question'][:20]}...")
         
@@ -122,8 +120,8 @@ class ChatHistoryManager:
     
     def get_recent_history(self):
         """获取最近的对话历史（用于API请求）"""
-        # 只返回最近的几轮对话作为上下文
-        return self.chat_history[-self.max_api_history_length:] if len(self.chat_history) > self.max_api_history_length else self.chat_history
+        # 由于内存中已经只保留了最新的几轮对话，直接返回全部
+        return self.chat_history
     
     def is_similar_question(self, question1, question2):
         """判断两个问题是否相似（简单实现）"""
