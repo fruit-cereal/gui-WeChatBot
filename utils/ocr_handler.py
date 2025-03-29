@@ -13,27 +13,27 @@ from config import logger, Config
 class OCRHandler:
     def __init__(self):
         """初始化OCR处理器"""
-        logger.info("正在初始化PaddleOCR引擎...")
+        logger.info("正在初始化PaddleOCR引擎...", extra={'save_to_file': True})
         self.ocr = PaddleOCR(use_angle_cls=True, lang="ch", use_gpu=False)
         # 存储最近识别的文本结果，用于推断消息发送者
         self.last_recognized_texts = []
-        logger.info("PaddleOCR引擎初始化完成")
+        logger.info("PaddleOCR引擎初始化完成", extra={'save_to_file': True})
         
     def detect_wechat_window_name(self, texts):
         """检测OCR识别结果中是否包含微信窗口名称或其别名"""
         for text, confidence, _ in texts:
             # 检查主窗口名称
             if Config.WECHAT_WINDOW_NAME in text:
-                logger.info(f"检测到微信窗口名称：'{Config.WECHAT_WINDOW_NAME}'")
+                logger.info(f"检测到微信窗口名称：'{Config.WECHAT_WINDOW_NAME}'", extra={'save_to_file': True})
                 return True
             
             # 检查别名
             for alias in Config.WECHAT_WINDOW_NAME_ALIASES:
                 if alias in text:
-                    logger.info(f"检测到微信窗口名称别名：'{alias}'")
+                    logger.info(f"检测到微信窗口名称别名：'{alias}'", extra={'save_to_file': True})
                     return True
         
-        logger.warning(f"OCR识别结果中未包含微信窗口名称或其别名，可能是微信窗口被其他窗口遮挡")
+        logger.warning(f"OCR识别结果中未包含微信窗口名称或其别名，可能是微信窗口被其他窗口遮挡", extra={'save_to_file': True})
         return False
     
     def recognize_text(self, image):
@@ -49,26 +49,22 @@ class OCRHandler:
             # PaddleOCR返回格式: [[[x1,y1], [x2,y2], [x3,y3], [x4,y4]], [text, confidence]]
             texts = []
             
-            # 准备用于日志记录的字符串列表
-            ocr_log_lines = ["OCR识别结果:"]
-            
             for line in result[0]:
                 text, confidence = line[1]
-                # 添加到日志列表
-                ocr_log_lines.append(f"文本: '{text}', 置信度: {confidence:.4f}")
-                
+                logger.info(f"OCR识别: '{text}', 置信度: {confidence:.4f}")
+
                 if confidence >= Config.OCR_CONFIDENCE_THRESHOLD:
                     texts.append((text, confidence, line[0]))  # 文本、置信度、位置
-            
+
             # 保存当前识别结果，用于下次推断发送者
             self.last_recognized_texts = texts.copy()
-            
-            # 返回处理后的文本列表和日志字符串列表
-            return texts, ocr_log_lines
+
+            # 只返回处理后的文本列表
+            return texts
         except Exception as e:
-            logger.error(f"OCR识别失败: {e}")
+            logger.error(f"OCR识别失败: {e}", extra={'save_to_file': True})
             # 返回空列表表示失败
-            return [], []
+            return []
     
     def is_next_line(self, current_pos, next_pos):
         """判断next_pos是否是current_pos的下一行"""

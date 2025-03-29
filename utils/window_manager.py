@@ -33,11 +33,11 @@ class WindowManager:
         win32gui.EnumWindows(callback, hwnds)
         
         if hwnds:
-            logger.info(f"找到微信窗口，句柄: {hwnds[0]}")
+            logger.info(f"找到微信窗口，句柄: {hwnds[0]}", extra={'save_to_file': True}) # 添加标记
             self.wechat_hwnd = hwnds[0]
             return hwnds[0]
         else:
-            logger.error("未找到微信窗口，请确保微信已启动")
+            logger.error("未找到微信窗口，请确保微信已启动", extra={'save_to_file': True}) # 添加标记
             return None
     
     def get_window_rect(self, hwnd=None):
@@ -50,7 +50,7 @@ class WindowManager:
                 left, top, right, bottom = win32gui.GetWindowRect(hwnd)
                 return (left, top, right, bottom)
             except Exception as e:
-                logger.error(f"获取窗口位置失败: {e}")
+                logger.error(f"获取窗口位置失败: {e}", extra={'save_to_file': True}) # 添加标记
         return None
     
     def restore_window(self, hwnd=None):
@@ -61,7 +61,7 @@ class WindowManager:
         if hwnd:
             # 检查窗口是否最小化
             if win32gui.IsIconic(hwnd):
-                logger.info("检测到微信窗口已最小化，正在恢复...")
+                logger.info("检测到微信窗口已最小化，正在恢复...", extra={'save_to_file': True}) # 添加标记
                 # 恢复窗口
                 win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
                 time.sleep(0.5)  # 等待窗口恢复
@@ -90,6 +90,7 @@ class WindowManager:
         if not self.wechat_hwnd:
             self.wechat_hwnd = self.find_wechat_window()
             if not self.wechat_hwnd:
+                # find_wechat_window 内部已经记录了错误，这里不再重复记录
                 return None
         
         # 检查窗口是否最小化
@@ -97,13 +98,13 @@ class WindowManager:
         
         # 如果窗口最小化，则不进行截图
         if is_minimized:
-            logger.info("微信窗口已最小化，跳过截图")
+            logger.info("微信窗口已最小化，跳过截图", extra={'save_to_file': True})
             return None
         
         # 获取窗口位置
         rect = self.get_window_rect()
         if not rect:
-            logger.error("获取窗口位置失败")
+            logger.error("获取窗口位置失败", extra={'save_to_file': True})
             return None
         
         left, top, right, bottom = rect
@@ -117,19 +118,20 @@ class WindowManager:
             logger.debug(f"成功截取微信窗口截图，尺寸: {width}x{height}")
             return screenshot
         except Exception as e:
-            logger.error(f"截图失败: {e}")
+            logger.error(f"截图失败: {e}", extra={'save_to_file': True})
             return None
     
     def click_chat_input(self):
         """点击聊天输入框"""
         if not self.wechat_hwnd:
-            logger.error("未找到微信窗口，无法点击聊天输入框")
+            logger.error("未找到微信窗口，无法点击聊天输入框", extra={'save_to_file': True})
             return False
         
         try:
             # 获取窗口位置
             rect = self.get_window_rect()
             if not rect:
+                # get_window_rect 内部已经记录了错误，这里不再重复记录
                 return False
             
             left, top, right, bottom = rect
@@ -147,11 +149,11 @@ class WindowManager:
             chat_y = top + int(height * Config.CHAT_INPUT_BOX_RELATIVE_Y)
             
             # 点击聊天输入框
-            logger.info(f"点击聊天输入框位置: ({chat_x}, {chat_y})")
+            logger.info(f"点击聊天输入框位置: ({chat_x}, {chat_y})", extra={'save_to_file': True})
             pyautogui.click(chat_x, chat_y)
             time.sleep(1.0)  # 确保输入框被激活
             
             return True
         except Exception as e:
-            logger.error(f"点击聊天输入框失败: {e}")
+            logger.error(f"点击聊天输入框失败: {e}", extra={'save_to_file': True})
             return False

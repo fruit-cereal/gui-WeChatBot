@@ -27,8 +27,8 @@ class ChatHistoryManager:
         self.current_role = Config.DEFAULT_ROLE
         self.chat_history_file = self.get_history_file_path(self.current_role)
         
-        logger.info(f"当前角色: {self.current_role}")
-        logger.info(f"对话历史文件: {self.chat_history_file}")
+        logger.info(f"当前角色: {self.current_role}", extra={'save_to_file': True})
+        logger.info(f"对话历史文件: {self.chat_history_file}", extra={'save_to_file': True})
         
         # 加载历史对话记录
         self.load_chat_history()
@@ -51,7 +51,7 @@ class ChatHistoryManager:
         if new_role == self.current_role:
             return  # 如果角色相同，不需要切换
         
-        logger.info(f"检测到角色变更: {self.current_role} -> {new_role}")
+        logger.info(f"检测到角色变更: {self.current_role} -> {new_role}", extra={'save_to_file': True})
         
         # 保存当前角色的对话历史
         self.save_chat_history()
@@ -60,8 +60,8 @@ class ChatHistoryManager:
         self.current_role = new_role
         self.chat_history_file = self.get_history_file_path(self.current_role)
         
-        logger.info(f"切换到新角色: {self.current_role}")
-        logger.info(f"新对话历史文件: {self.chat_history_file}")
+        logger.info(f"切换到新角色: {self.current_role}", extra={'save_to_file': True})
+        logger.info(f"新对话历史文件: {self.chat_history_file}", extra={'save_to_file': True})
         
         # 加载新角色的对话历史
         self.load_chat_history()
@@ -72,16 +72,16 @@ class ChatHistoryManager:
             if os.path.exists(self.chat_history_file):
                 with open(self.chat_history_file, 'r', encoding='utf-8') as f:
                     self.chat_history = json.load(f)
-                logger.info(f"成功从{self.chat_history_file}加载了{len(self.chat_history)}轮历史对话")
+                logger.info(f"成功从{self.chat_history_file}加载了{len(self.chat_history)}轮历史对话", extra={'save_to_file': True})
                 # 只在内存中保留最新的几轮对话
                 if len(self.chat_history) > self.max_api_history_length:
                     self.chat_history = self.chat_history[-self.max_api_history_length:]
-                    logger.info(f"内存中只保留最新的{self.max_api_history_length}轮对话")
+                    logger.info(f"内存中只保留最新的{self.max_api_history_length}轮对话", extra={'save_to_file': True})
             else:
-                logger.info(f"未找到角色'{self.current_role}'的历史对话文件，将创建新的对话历史")
+                logger.info(f"未找到角色'{self.current_role}'的历史对话文件，将创建新的对话历史", extra={'save_to_file': True})
                 self.chat_history = []
         except Exception as e:
-            logger.error(f"加载历史对话失败: {e}")
+            logger.error(f"加载历史对话失败: {e}", extra={'save_to_file': True})
             self.chat_history = []
     
     def save_chat_history(self):
@@ -92,9 +92,9 @@ class ChatHistoryManager:
             
             with open(self.chat_history_file, 'w', encoding='utf-8') as f:
                 json.dump(self.chat_history, f, ensure_ascii=False, indent=2)
-            logger.info(f"成功将{len(self.chat_history)}轮对话历史保存到{self.chat_history_file}")
+            logger.info(f"成功将{len(self.chat_history)}轮对话历史保存到{self.chat_history_file}", extra={'save_to_file': True})
         except Exception as e:
-            logger.error(f"保存对话历史失败: {e}")
+            logger.error(f"保存对话历史失败: {e}", extra={'save_to_file': True})
     
     def add_chat(self, sender, question, response):
         """添加新的对话记录"""
@@ -113,7 +113,7 @@ class ChatHistoryManager:
         # 如果内存中的历史记录超过最大长度，删除最早的对话
         if len(self.chat_history) > self.max_api_history_length:
             removed = self.chat_history.pop(0)
-            logger.info(f"内存中历史记录已达到最大长度，删除最早的对话: {removed['sender']}: {removed['question'][:20]}...")
+            logger.info(f"内存中历史记录已达到最大长度，删除最早的对话: {removed['sender']}: {removed['question'][:20]}...", extra={'save_to_file': True})
         
         # 保存对话历史到本地文件
         self.save_chat_history()
@@ -171,22 +171,21 @@ class ChatHistoryManager:
         for chat in recent_chats:
             # 使用简单的相似度检查，如果问题相似度超过80%，则认为是相同问题
             if self.is_similar_question(question, chat['question']):
-                # 如果提供了发送者，需要检查发送者和角色是否都相同
-                if sender is not None:
-                    # 检查发送者和角色是否都相同
-                    if chat['sender'] == sender and chat['role'] == self.current_role:
-                        logger.info(f"用户'{sender}'向角色'{self.current_role}'提出的问题'{question}'与其最近{check_length}轮对话中的问题'{chat['question']}'相似")
-                        return True
-                    else:
-                        # 即使问题相似，但如果发送者或角色不同，则不视为重复
-                        if chat['sender'] != sender:
-                            logger.info(f"问题'{question}'虽与历史中的'{chat['question']}'相似，但发送者不同（当前：{sender}，历史：{chat['sender']}），允许回答")
-                        elif chat['role'] != self.current_role:
-                            logger.info(f"问题'{question}'虽与历史中的'{chat['question']}'相似，但角色不同（当前：{self.current_role}，历史：{chat['role']}），允许回答")
-                        continue # 继续检查下一条历史记录
-                else:
-                    # 如果没有提供发送者，保持原有行为（只检查问题相似性）
-                    logger.info(f"问题'{question}'与最近{check_length}轮对话中的问题'{chat['question']}'相似")
+                # 如果发送者未知（假设为None或空字符串），只要问题相似就视为重复
+                if sender is None or sender == "":
+                    logger.info(f"未知用户提出的问题'{question}'与最近{check_length}轮对话中问题'{chat['question']}'相似，不再重复发送")
                     return True
+                
+                # 如果提供了发送者，需要检查发送者和角色是否都相同
+                if chat['sender'] == sender and chat['role'] == self.current_role:
+                    logger.info(f"用户'{sender}'向角色'{self.current_role}'提出的问题'{question}'与其最近{check_length}轮对话中的问题'{chat['question']}'相似，不再重复发送")
+                    return True
+                else:
+                    # 即使问题相似，但如果发送者或角色不同，则不视为重复
+                    if chat['sender'] != sender:
+                        logger.info(f"问题'{question}'虽与历史中的'{chat['question']}'相似，但发送者不同（当前：{sender}，历史：{chat['sender']}），允许回答", extra={'save_to_file': True})
+                    elif chat['role'] != self.current_role:
+                        logger.info(f"问题'{question}'虽与历史中的'{chat['question']}'相似，但角色不同（当前：{self.current_role}，历史：{chat['role']}），允许回答", extra={'save_to_file': True})
+                    continue # 继续检查下一条历史记录
         
         return False

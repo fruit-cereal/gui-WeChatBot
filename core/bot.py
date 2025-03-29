@@ -18,7 +18,8 @@ from core.message_sender import MessageSender
 class WeChatBot:
     def __init__(self):
         """初始化微信机器人"""
-        logger.info("正在初始化微信机器人...")
+        # 这些初始化信息需要保存到文件
+        logger.info("正在初始化微信机器人...", extra={'save_to_file': True})
         
         # 初始化各个模块
         self.window_manager = WindowManager()
@@ -30,18 +31,20 @@ class WeChatBot:
         self.message_detector = MessageDetector(self.ocr_handler, self.chat_history_manager)
         self.message_sender = MessageSender(self.window_manager)
         
-        logger.info(f"当前角色: {self.chat_history_manager.current_role}")
-        logger.info(f"当前已加载{len(self.chat_history_manager.chat_history)}轮历史对话")
+        # 这些初始化信息需要保存到文件
+        logger.info(f"当前角色: {self.chat_history_manager.current_role}", extra={'save_to_file': True})
+        logger.info(f"当前已加载{len(self.chat_history_manager.chat_history)}轮历史对话", extra={'save_to_file': True})
     
     def run(self):
         """运行机器人主循环"""
-        logger.info("微信机器人已启动，正在监控群聊...")
-        logger.info(f"当前角色: {self.chat_history_manager.current_role}")
+        # 这些启动信息需要保存到文件
+        logger.info("微信机器人已启动，正在监控群聊...", extra={'save_to_file': True})
+        logger.info(f"当前角色: {self.chat_history_manager.current_role}", extra={'save_to_file': True})
         
-        # 打印所有可用角色
-        logger.info("可用角色列表:")
+        # 打印所有可用角色 (也保存到文件)
+        logger.info("可用角色列表:", extra={'save_to_file': True})
         for role in Config.ROLES:
-            logger.info(f"- {role['name']} (别名: {', '.join(role['aliases'])})")
+            logger.info(f"- {role['name']} (别名: {', '.join(role['aliases'])})", extra={'save_to_file': True})
         
         # 记录窗口最初的状态
         initial_minimized = False
@@ -53,25 +56,22 @@ class WeChatBot:
             if self.window_manager.wechat_hwnd:
                 initial_minimized = self.window_manager.is_window_minimized()
         
-        logger.info(f"微信窗口初始状态: {'最小化' if initial_minimized else '正常'}")
+        # 窗口状态信息保存到文件
+        logger.info(f"微信窗口初始状态: {'最小化' if initial_minimized else '正常'}", extra={'save_to_file': True})
         
         try:
             while True:
                 # 截取微信窗口（如果窗口最小化则跳过截图）
                 screenshot = self.window_manager.capture_wechat_screen()
                 
-                # 用于暂存本次OCR识别的日志行
-                ocr_log_lines_buffer = []
-                
                 if screenshot is not None:
-                    # 识别文字，同时获取用于日志记录的行
-                    texts, ocr_log_lines = self.ocr_handler.recognize_text(screenshot)
-                    # 暂存OCR日志行
-                    ocr_log_lines_buffer = ocr_log_lines
-                    
+                    # 识别文字 (置信度打印已在 ocr_handler.py 内部完成)
+                    texts = self.ocr_handler.recognize_text(screenshot)
+
                     # 检查是否识别到微信窗口名称
                     if not self.ocr_handler.detect_wechat_window_name(texts):
-                        logger.warning("未检测到微信窗口名称，可能是微信窗口被其他窗口遮挡，跳过后续处理")
+                        # 警告信息需要保存到文件
+                        logger.warning("未检测到微信窗口名称，可能是微信窗口被其他窗口遮挡，跳过后续处理", extra={'save_to_file': True})
                         time.sleep(Config.SCREENSHOT_INTERVAL)
                         continue
                     
@@ -79,7 +79,8 @@ class WeChatBot:
                     sender, question = self.message_detector.detect_trigger(texts)
                     
                     if sender and question:
-                        logger.info("检测到需要回复的消息，准备回复...")
+                        # 检测到消息的提示信息保存到文件
+                        logger.info("检测到需要回复的消息，准备回复...", extra={'save_to_file': True})
                         
                         # 生成回复
                         response = self.api_client.generate_response(
@@ -95,25 +96,34 @@ class WeChatBot:
                         # 发送回复
                         send_success = self.message_sender.send_message(response)
                         
-                        # 如果消息发送成功，则记录之前暂存的OCR日志
-                        if send_success and ocr_log_lines_buffer:
-                            logger.info("消息发送成功，记录本次OCR识别结果:")
-                            for log_line in ocr_log_lines_buffer:
-                                logger.info(log_line)
-                        elif not send_success:
-                             logger.warning("消息发送失败，本次OCR识别结果将不被记录到文件。")
-                             # （可选）如果发送失败，也可以选择记录OCR日志以供调试
-                             # for log_line in ocr_log_lines_buffer:
-                             #     logger.info(f"[发送失败时记录] {log_line}")
+                        # 打印发送状态，并在成功时将OCR结果写入日志文件
+                        if send_success:
+                            # 成功信息保存到文件
+                            logger.info("消息发送成功。", extra={'save_to_file': True})
+                            # 仅在发送成功时，将本次OCR详细结果记录到日志文件
+                            if texts:
+                                logger.info("---------- 本次成功回复对应的OCR识别详情 ----------", extra={'save_to_file': True})
+                                for text, confidence, position in texts:
+                                    # 格式化包含文本、置信度和位置的日志条目
+                                    log_entry = f"文本: '{text}', 置信度: {confidence:.4f}, 位置: {position}"
+                                    logger.info(log_entry, extra={'save_to_file': True})
+                                logger.info("-----------------------------------------------------------------", extra={'save_to_file': True})
+                            else:
+                                logger.info("本次OCR未识别到有效文本", extra={'save_to_file': True})
+                        else:
+                            # 失败警告信息保存到文件
+                            logger.warning("消息发送失败。", extra={'save_to_file': True})
 
                 # 等待一段时间再次截图
                 time.sleep(Config.SCREENSHOT_INTERVAL)
         
         except KeyboardInterrupt:
-            logger.info("收到中断信号，微信机器人已停止")
+            # 停止信息保存到文件
+            logger.info("收到中断信号，微信机器人已停止", extra={'save_to_file': True})
             # 保存当前对话历史
-            self.chat_history_manager.save_chat_history()
+            self.chat_history_manager.save_chat_history() # 这个函数内部的日志也应该考虑是否加标记
         except Exception as e:
-            logger.error(f"运行出错: {e}")
+            # 错误信息保存到文件
+            logger.error(f"运行出错: {e}", extra={'save_to_file': True})
             # 保存当前对话历史
-            self.chat_history_manager.save_chat_history()
+            self.chat_history_manager.save_chat_history() # 这个函数内部的日志也应该考虑是否加标记

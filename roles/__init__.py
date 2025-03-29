@@ -28,10 +28,10 @@ def load_all_roles():
                     # 验证角色配置是否有效
                     if 'name' in role_config and 'aliases' in role_config and 'system_prompt' in role_config:
                         roles.append(role_config)
-                        logger.info(f"已加载角色配置: {role_config['name']}")
+                        logger.info(f"已加载角色配置: {role_config['name']}", extra={'save_to_file': True}) # 添加标记
                     else:
-                        logger.warning(f"角色配置文件 {filename} 格式无效，已跳过")
+                        logger.warning(f"角色配置文件 {filename} 格式无效，已跳过", extra={'save_to_file': True}) # 添加标记
             except Exception as e:
-                logger.error(f"加载角色配置文件 {filename} 失败: {e}")
+                logger.error(f"加载角色配置文件 {filename} 失败: {e}", extra={'save_to_file': True}) # 添加标记
     
     return roles

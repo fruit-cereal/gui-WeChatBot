@@ -18,12 +18,12 @@ class APIClient:
         
         # 检查API密钥
         if not self.api_key:
-            logger.warning("未设置DeepSeek API密钥，请在Config类中设置DEEPSEEK_API_KEY")
+            logger.warning("未设置DeepSeek API密钥，请在Config类中设置DEEPSEEK_API_KEY", extra={'save_to_file': True})
     
     def generate_response(self, sender, question, chat_history, current_role):
         """调用DeepSeek API生成回复"""
         if not self.api_key:
-            logger.error("未设置DeepSeek API密钥，无法生成回复")
+            logger.error("未设置DeepSeek API密钥，无法生成回复", extra={'save_to_file': True})
             return "抱歉，我的API密钥未设置，无法回答您的问题。"
         
         try:
@@ -55,7 +55,7 @@ class APIClient:
                 "max_tokens": 800
             }
             
-            logger.info(f"发送API请求，包含{len(chat_history)}轮历史对话")
+            logger.info(f"发送API请求，包含{len(chat_history)}轮历史对话", extra={'save_to_file': True})
             
             response = requests.post(
                 self.api_url,
@@ -66,12 +66,12 @@ class APIClient:
             if response.status_code == 200:
                 result = response.json()
                 answer = result["choices"][0]["message"]["content"]
-                logger.info(f"成功生成回复: {answer[:50]}...")
+                logger.info(f"成功生成回复: {answer[:50]}...", extra={'save_to_file': True})
                 return answer
             else:
-                logger.error(f"API请求失败: {response.status_code} - {response.text}")
+                logger.error(f"API请求失败: {response.status_code} - {response.text}", extra={'save_to_file': True})
                 return f"抱歉，API请求失败: {response.status_code}"
         
         except Exception as e:
-            logger.error(f"生成回复时出错: {e}")
+            logger.error(f"生成回复时出错: {e}", extra={'save_to_file': True})
             return f"抱歉，生成回复时出错: {str(e)}"

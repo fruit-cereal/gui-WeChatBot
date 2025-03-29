@@ -102,7 +102,7 @@ class MessageDetector:
                             continue  # 继续检查后续问题，而不是直接返回None
                         
                         self.last_message = after_trigger
-                        logger.info(f"检测到触发词 {trigger_word}，发送者: {sender}，问题: {after_trigger}")
+                        logger.info(f"检测到触发词 {trigger_word}，发送者: {sender}，问题: {after_trigger}", extra={'save_to_file': True}) # 添加标记
                         return sender, after_trigger
         
         return None, None

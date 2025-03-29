@@ -53,9 +53,9 @@ class MessageSender:
             pyautogui.press('enter')
             time.sleep(random.uniform(0.3, 0.8))  # 随机等待发送完成
             
-            logger.info("消息已发送")
+            logger.info("消息已发送", extra={'save_to_file': True}) # 添加标记
             return True
         
         except Exception as e:
-            logger.error(f"发送消息失败: {e}")
+            logger.error(f"发送消息失败: {e}", extra={'save_to_file': True}) # 添加标记
             return False

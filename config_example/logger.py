@@ -20,32 +20,54 @@ def get_log_filename():
     today = datetime.now().strftime("%Y-%m-%d")
     return os.path.join("log", f"{today}-wechat_bot.log")
 
-# 创建一个logger
-logger = logging.getLogger(__name__)
+# --- 自定义过滤器 ---
+class FileLogFilter(logging.Filter):
+    """
+    自定义日志过滤器，只允许带有 'save_to_file' 标记的记录通过。
+    """
+    def filter(self, record):
+        # 检查记录是否有名为 'save_to_file' 的属性，并且其值为 True
+        # 如果没有这个属性，默认为 False (即不保存到文件)
+        return getattr(record, 'save_to_file', False)
+
+# --- Logger 设置 ---
+logger = logging.getLogger("WeChatBotLogger") # 给logger一个名字
+# 设置全局最低日志级别为 INFO (不再依赖Config)
 logger.setLevel(logging.INFO)
 
-# 创建一个格式化器
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-# 创建一个控制台处理器（不过滤，所有信息都输出到控制台）
+# --- 格式化器 ---
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s') # 添加了logger名字
+
+# --- 控制台处理器 ---
+# 控制台始终显示INFO及以上级别
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
+# 控制台处理器不过滤，显示所有达到其级别的日志
+logger.addHandler(console_handler)
 
-# 创建一个文件处理器（使用过滤器，只记录符合条件的信息）
+
+# --- 文件处理器 ---
+# 文件处理器也使用INFO级别，但会通过过滤器筛选
 file_handler = TimedRotatingFileHandler(
-    filename=get_log_filename(),  # 使用日期格式化的文件名
+    filename=get_log_filename(),
     when="midnight",
     interval=1,
-    backupCount=30,  # 保留30天的日志
+    backupCount=30,
     encoding='utf-8'
 )
-file_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.INFO) # 与logger级别一致
 file_handler.setFormatter(formatter)
 
-# 添加处理器到logger
-logger.addHandler(console_handler)
+# --- 添加过滤器到文件处理器 ---
+file_filter = FileLogFilter()
+file_handler.addFilter(file_filter) # 只给文件处理器添加过滤器
+
+# --- 添加文件处理器到Logger ---
 logger.addHandler(file_handler)
 
-# 阻止日志传递到父logger
+
+# --- 防止日志向上传播 ---
+# 如果根logger有处理器，可能会导致日志重复打印
 logger.propagate = False
