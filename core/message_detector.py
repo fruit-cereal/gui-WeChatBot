@@ -43,7 +43,7 @@ class MessageDetector:
                 # 检查别名
                 for alias in role["aliases"]:
                     if alias in text:
-                        logger.info(f"检测到触发词别名: {alias}，将作为 {role['name']} 处理")
+                        logger.info(f"检测到触发词别名: {alias}，将作为 {role['name']} 处理", extra={'save_to_file': True})
                         trigger_found = True
                         trigger_word = alias
                         role_name = role["name"]
@@ -94,15 +94,15 @@ class MessageDetector:
                 
                 # 如果找到了触发词和问题
                 if after_trigger:
+                    logger.info(f"检测到触发词 {trigger_word}，发送者: {sender}，问题: {after_trigger}", extra={'save_to_file': True})
                     # 检查是否与上一次相同，避免重复回复
                     if after_trigger != self.last_message:
                         # 检查问题是否在历史记录中已经出现过（考虑发送者）
                         if self.chat_history_manager.is_question_already_answered(after_trigger, sender):
-                            logger.info(f"用户'{sender}'的问题'{after_trigger}'已在历史记录中出现过，继续检查后续问题")
+                            logger.info(f"重复问题检查未通过，不再重复回答", extra={'save_to_file': True})
                             continue  # 继续检查后续问题，而不是直接返回None
                         
                         self.last_message = after_trigger
-                        logger.info(f"检测到触发词 {trigger_word}，发送者: {sender}，问题: {after_trigger}", extra={'save_to_file': True}) # 添加标记
                         return sender, after_trigger
         
         return None, None

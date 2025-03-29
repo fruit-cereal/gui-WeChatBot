@@ -70,8 +70,6 @@ class WeChatBot:
 
                     # 检查是否识别到微信窗口名称
                     if not self.ocr_handler.detect_wechat_window_name(texts):
-                        # 警告信息需要保存到文件
-                        logger.warning("未检测到微信窗口名称，可能是微信窗口被其他窗口遮挡，跳过后续处理", extra={'save_to_file': True})
                         time.sleep(Config.SCREENSHOT_INTERVAL)
                         continue
                     
@@ -96,10 +94,8 @@ class WeChatBot:
                         # 发送回复
                         send_success = self.message_sender.send_message(response)
                         
-                        # 打印发送状态，并在成功时将OCR结果写入日志文件
+                        # 在发送成功时将OCR结果写入日志文件
                         if send_success:
-                            # 成功信息保存到文件
-                            logger.info("消息发送成功。", extra={'save_to_file': True})
                             # 仅在发送成功时，将本次OCR详细结果记录到日志文件
                             if texts:
                                 logger.info("---------- 本次成功回复对应的OCR识别详情 ----------", extra={'save_to_file': True})
@@ -110,9 +106,6 @@ class WeChatBot:
                                 logger.info("-----------------------------------------------------------------", extra={'save_to_file': True})
                             else:
                                 logger.info("本次OCR未识别到有效文本", extra={'save_to_file': True})
-                        else:
-                            # 失败警告信息保存到文件
-                            logger.warning("消息发送失败。", extra={'save_to_file': True})
 
                 # 等待一段时间再次截图
                 time.sleep(Config.SCREENSHOT_INTERVAL)
