@@ -49,11 +49,13 @@ class OCRHandler:
             # PaddleOCR返回格式: [[[x1,y1], [x2,y2], [x3,y3], [x4,y4]], [text, confidence]]
             texts = []
             
-            # 打印所有识别到的文本和置信度，无论置信度高低
-            logger.info("OCR识别结果:")
+            # 准备用于日志记录的字符串列表
+            ocr_log_lines = ["OCR识别结果:"]
+            
             for line in result[0]:
                 text, confidence = line[1]
-                logger.info(f"文本: '{text}', 置信度: {confidence:.4f}")
+                # 添加到日志列表
+                ocr_log_lines.append(f"文本: '{text}', 置信度: {confidence:.4f}")
                 
                 if confidence >= Config.OCR_CONFIDENCE_THRESHOLD:
                     texts.append((text, confidence, line[0]))  # 文本、置信度、位置
@@ -61,10 +63,12 @@ class OCRHandler:
             # 保存当前识别结果，用于下次推断发送者
             self.last_recognized_texts = texts.copy()
             
-            return texts
+            # 返回处理后的文本列表和日志字符串列表
+            return texts, ocr_log_lines
         except Exception as e:
             logger.error(f"OCR识别失败: {e}")
-            return []
+            # 返回空列表表示失败
+            return [], []
     
     def is_next_line(self, current_pos, next_pos):
         """判断next_pos是否是current_pos的下一行"""

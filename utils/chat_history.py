@@ -173,16 +173,21 @@ class ChatHistoryManager:
         for chat in recent_chats:
             # 使用简单的相似度检查，如果问题相似度超过80%，则认为是相同问题
             if self.is_similar_question(question, chat['question']):
-                # 如果提供了发送者，只有当发送者相同时才视为重复
+                # 如果提供了发送者，需要检查发送者和角色是否都相同
                 if sender is not None:
-                    if chat['sender'] == sender:
-                        logger.info(f"用户'{sender}'的问题'{question}'与其最近{check_length}轮对话中的问题'{chat['question']}'相似")
+                    # 检查发送者和角色是否都相同
+                    if chat['sender'] == sender and chat['role'] == self.current_role:
+                        logger.info(f"用户'{sender}'向角色'{self.current_role}'提出的问题'{question}'与其最近{check_length}轮对话中的问题'{chat['question']}'相似")
                         return True
                     else:
-                        logger.info(f"问题'{question}'虽与历史中的'{chat['question']}'相似，但发送者不同（当前：{sender}，历史：{chat['sender']}），允许回答")
-                        continue
+                        # 即使问题相似，但如果发送者或角色不同，则不视为重复
+                        if chat['sender'] != sender:
+                            logger.info(f"问题'{question}'虽与历史中的'{chat['question']}'相似，但发送者不同（当前：{sender}，历史：{chat['sender']}），允许回答")
+                        elif chat['role'] != self.current_role:
+                            logger.info(f"问题'{question}'虽与历史中的'{chat['question']}'相似，但角色不同（当前：{self.current_role}，历史：{chat['role']}），允许回答")
+                        continue # 继续检查下一条历史记录
                 else:
-                    # 如果没有提供发送者，保持原有行为
+                    # 如果没有提供发送者，保持原有行为（只检查问题相似性）
                     logger.info(f"问题'{question}'与最近{check_length}轮对话中的问题'{chat['question']}'相似")
                     return True
         

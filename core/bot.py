@@ -60,9 +60,14 @@ class WeChatBot:
                 # 截取微信窗口（如果窗口最小化则跳过截图）
                 screenshot = self.window_manager.capture_wechat_screen()
                 
+                # 用于暂存本次OCR识别的日志行
+                ocr_log_lines_buffer = []
+                
                 if screenshot is not None:
-                    # 识别文字
-                    texts = self.ocr_handler.recognize_text(screenshot)
+                    # 识别文字，同时获取用于日志记录的行
+                    texts, ocr_log_lines = self.ocr_handler.recognize_text(screenshot)
+                    # 暂存OCR日志行
+                    ocr_log_lines_buffer = ocr_log_lines
                     
                     # 检查是否识别到微信窗口名称
                     if not self.ocr_handler.detect_wechat_window_name(texts):
@@ -88,8 +93,19 @@ class WeChatBot:
                         self.chat_history_manager.add_chat(sender, question, response)
                         
                         # 发送回复
-                        self.message_sender.send_message(response)
-                
+                        send_success = self.message_sender.send_message(response)
+                        
+                        # 如果消息发送成功，则记录之前暂存的OCR日志
+                        if send_success and ocr_log_lines_buffer:
+                            logger.info("消息发送成功，记录本次OCR识别结果:")
+                            for log_line in ocr_log_lines_buffer:
+                                logger.info(log_line)
+                        elif not send_success:
+                             logger.warning("消息发送失败，本次OCR识别结果将不被记录到文件。")
+                             # （可选）如果发送失败，也可以选择记录OCR日志以供调试
+                             # for log_line in ocr_log_lines_buffer:
+                             #     logger.info(f"[发送失败时记录] {log_line}")
+
                 # 等待一段时间再次截图
                 time.sleep(Config.SCREENSHOT_INTERVAL)
         
