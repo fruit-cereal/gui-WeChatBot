@@ -1,87 +1,133 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-日志配置模块
-配置日志记录器和自定义过滤器
-"""
+"""日志配置模块：配置日志记录器和自定义过滤器"""
 
 import logging
 import os
-from logging.handlers import TimedRotatingFileHandler
-from datetime import datetime, timedelta # 导入timedelta
+import time
+import glob
+from logging.handlers import BaseRotatingHandler
 
 # 确保日志目录存在
 os.makedirs("log", exist_ok=True)
 
-# --- 自定义轮转日志文件名 ---
-def daily_log_namer(default_name):
-    """在轮转时生成 YYYY-MM-DD-wechat_bot.log 格式的文件名"""
-    # default_name 格式通常是 filename.YYYY-MM-DD 或 filename.YYYY-MM-DD_HH-MM-SS
-    # 我们需要提取日期部分
-    base_filename, date_str = os.path.splitext(default_name)
-    # 如果有时间戳，去掉时间戳部分
-    date_part = date_str.split('_')[0].strip('.') # .YYYY-MM-DD
+class DirectDailyRotatingFileHandler(BaseRotatingHandler):
+    """日志处理器，直接写入以当前日期命名的文件 (YYYY-MM-DD-basename.log)，并在午夜自动切换"""
     
-    # TimedRotatingFileHandler 在午夜轮转时，使用的是 *前一天* 的日期来命名备份文件
-    # 所以我们直接使用提取出的日期
-    log_date_str = date_part 
-    
-    # 构建新的文件名
-    # 注意：原 base_filename 是 log/wechat_bot_current.log，我们需要的是 log/YYYY-MM-DD-wechat_bot.log
-    log_dir = os.path.dirname(base_filename) # 获取 log 目录
-    return os.path.join(log_dir, f"{log_date_str}-wechat_bot.log")
+    def __init__(self, filename_base, when='midnight', backupCount=0, encoding=None, delay=False, utc=False):
+        self.log_dir = os.path.dirname(filename_base)
+        self.base_name_part = os.path.basename(filename_base)
+        self.suffix_format = "%Y-%m-%d"
+        self.utc = utc
+        self.backupCount = backupCount
+        self.when = 'D' if when.upper() == 'MIDNIGHT' else when.upper()
+        
+        if self.when not in ['S', 'M', 'H', 'D', 'W0', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6']:
+            raise ValueError(f"Invalid rollover time specified: {when}")
+            
+        # 计算当前文件名并初始化
+        current_time_tuple = time.gmtime() if self.utc else time.localtime()
+        current_date_str = time.strftime(self.suffix_format, current_time_tuple)
+        self.current_filename = os.path.join(self.log_dir, f"{current_date_str}-{self.base_name_part}")
+        
+        BaseRotatingHandler.__init__(self, self.current_filename, mode='a', encoding=encoding, delay=delay)
+        
+        # 计算第一次轮转时间
+        self.rolloverAt = self.computeRollover(int(time.time()))
 
-# --- 自定义过滤器 ---
+    def computeRollover(self, currentTime):
+        """计算下一次轮转的时间戳"""
+        if self.when != 'D':
+            raise NotImplementedError("只支持每日午夜('D'或'midnight')轮转")
+
+        t = time.gmtime(currentTime) if self.utc else time.localtime(currentTime)
+        
+        # 计算到午夜的秒数
+        seconds_since_midnight = (t[3] * 3600) + (t[4] * 60) + t[5]
+        rolloverTime = currentTime - seconds_since_midnight + 86400
+        
+        return int(rolloverTime)
+
+    def shouldRollover(self, record):
+        """检查是否应该执行轮转"""
+        return 1 if int(time.time()) >= self.rolloverAt else 0
+
+    def doRollover(self):
+        """执行轮转：关闭当前流，更新文件名到新日期，打开新流，清理旧文件"""
+        # 关闭当前流
+        if self.stream:
+            self.stream.close()
+            self.stream = None
+        
+        # 计算新文件名
+        current_time_tuple = time.gmtime() if self.utc else time.localtime()
+        new_date_str = time.strftime(self.suffix_format, current_time_tuple)
+        self.baseFilename = os.path.join(self.log_dir, f"{new_date_str}-{self.base_name_part}")
+        
+        # 打开新文件
+        if not self.delay:
+            self.stream = self._open()
+        
+        # 清理旧日志
+        if self.backupCount > 0:
+            try:
+                # 获取所有匹配的日志文件
+                log_pattern = os.path.join(self.log_dir, f"????-??-??-{self.base_name_part}")
+                existing_logs = glob.glob(log_pattern)
+                
+                # 排除当前文件
+                current_real_path = os.path.abspath(self.baseFilename)
+                logs_to_consider = [log for log in existing_logs if os.path.abspath(log) != current_real_path]
+                logs_to_consider.sort()
+                
+                # 删除超出保留数量的旧日志
+                if len(logs_to_consider) >= self.backupCount:
+                    for log_path in logs_to_consider[:len(logs_to_consider) - self.backupCount]:
+                        try:
+                            os.remove(log_path)
+                        except OSError as e:
+                            print(f"无法删除旧日志文件 {log_path}: {e}")
+            except Exception as e:
+                print(f"日志清理过程中出错: {e}")
+        
+        # 计算下一次轮转时间
+        current_timestamp = int(time.time())
+        newRolloverAt = self.computeRollover(current_timestamp)
+        # 确保轮转时间在未来
+        while newRolloverAt <= current_timestamp:
+            newRolloverAt += 86400  # 增加一天
+        self.rolloverAt = newRolloverAt
+
+
 class FileLogFilter(logging.Filter):
-    """
-    自定义日志过滤器，只允许带有 'save_to_file' 标记的记录通过。
-    """
+    """自定义日志过滤器，只允许带有 'save_to_file' 标记的记录通过"""
     def filter(self, record):
-        # 检查记录是否有名为 'save_to_file' 的属性，并且其值为 True
-        # 如果没有这个属性，默认为 False (即不保存到文件)
         return getattr(record, 'save_to_file', False)
 
-# --- Logger 设置 ---
-logger = logging.getLogger("WeChatBotLogger") # 给logger一个名字
-# 设置全局最低日志级别为 INFO (不再依赖Config)
+
+# 配置Logger
+logger = logging.getLogger("WeChatBotLogger")
 logger.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-
-# --- 格式化器 ---
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s') # 添加了logger名字
-
-# --- 控制台处理器 ---
-# 控制台始终显示INFO及以上级别
+# 控制台处理器
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
-# 控制台处理器不过滤，显示所有达到其级别的日志
 logger.addHandler(console_handler)
 
-
-# --- 文件处理器 ---
-# 文件处理器也使用INFO级别，但会通过过滤器筛选
-# 注意：filename 现在是固定的，namer 用于生成轮转后的文件名
-file_handler = TimedRotatingFileHandler(
-    filename=os.path.join("log", "wechat_bot_current.log"), # 固定当前日志文件名
+# 文件处理器
+file_handler = DirectDailyRotatingFileHandler(
+    filename_base=os.path.join("log", "wechat_bot.log"),
     when="midnight",
-    interval=1,
-    backupCount=30, # 保留最近30天的日志
-    encoding='utf-8',
-    namer=daily_log_namer # 使用自定义命名函数
+    backupCount=30,
+    encoding='utf-8'
 )
-file_handler.setLevel(logging.INFO) # 与logger级别一致
+file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(formatter)
-
-# --- 添加过滤器到文件处理器 ---
-file_filter = FileLogFilter()
-file_handler.addFilter(file_filter) # 只给文件处理器添加过滤器
-
-# --- 添加文件处理器到Logger ---
+file_handler.addFilter(FileLogFilter())
 logger.addHandler(file_handler)
 
-
-# --- 防止日志向上传播 ---
-# 如果根logger有处理器，可能会导致日志重复打印
+# 防止日志向上传播
 logger.propagate = False
