@@ -139,10 +139,6 @@ class ChatHistoryManager:
         if q1 == q2:
             return True
         
-        # 如果一个问题是另一个问题的子串
-        if q1 in q2 or q2 in q1:
-            return True
-        
         # 计算简单的相似度（共同字符数 / 较长字符串长度）
         common_chars = set(q1) & set(q2)
         similarity = len(common_chars) / max(len(set(q1)), len(set(q2)))
@@ -176,8 +172,8 @@ class ChatHistoryManager:
                     logger.info(f"未知用户提出向角色'{self.current_role}'提出的问题'{question}'与最近{check_length}轮对话中问题'{chat['question']}'相似，不再重复发送", extra={'save_to_file': True})
                     return True
                 
-                # 如果提供了发送者，需要检查发送者和角色是否都相同
-                if chat['sender'] == sender and chat['role'] == self.current_role:
+                # 如果提供了发送者，需要检查发送者和角色是否都相同（或之前已经有未知用户问过相同角色相似问题）
+                if (chat['sender'] == sender or chat['sender'] == Config.DEFAULT_USER_NAME) and chat['role'] == self.current_role:
                     logger.info(f"用户'{sender}'向角色'{self.current_role}'提出的问题'{question}'与其最近{check_length}轮对话中的问题'{chat['question']}'相似，不再重复发送", extra={'save_to_file': True})
                     return True
                 else:
