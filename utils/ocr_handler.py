@@ -81,7 +81,7 @@ class OCRHandler:
     def infer_sender_name(self):
         """根据上一次OCR识别结果推断可能的发送者名称"""
         if not self.last_recognized_texts:
-            logger.info("没有上一次OCR识别结果，无法推断发送者名称")
+            logger.info("没有上一次OCR识别结果，无法推断发送者名称", extra={'save_to_file': True})
             return None
         
         # 查找当前OCR结果中包含触发词的项
@@ -96,29 +96,29 @@ class OCRHandler:
                 break
         
         if trigger_index == -1 or trigger_index == 0:
-            logger.info("无法在OCR结果中找到触发词或触发词位于第一项，使用默认推断方式")
+            logger.info("无法在OCR结果中找到触发词或触发词位于第一项，使用默认推断方式", extra={'save_to_file': True})
             # 退回到原来的方法：使用第一项作为可能的发送者
             possible_sender = self.last_recognized_texts[0][0]
         else:
             # 使用触发词上一条消息作为发送者名称
             possible_sender = self.last_recognized_texts[trigger_index - 1][0]
             
-        logger.info(f"从上一次OCR识别结果推断可能的发送者名称: '{possible_sender}'")
+        logger.info(f"从上一次OCR识别结果推断可能的发送者名称: '{possible_sender}'", extra={'save_to_file': True})
         
         # 验证推断的名称是否在配置的用户名列表中
         if hasattr(Config, 'USER_NAMES') and Config.USER_NAMES:
             # 检查主名称
             for user in Config.USER_NAMES:
                 if possible_sender == user['name']:
-                    logger.info(f"推断的发送者名称 '{possible_sender}' 匹配用户列表中的主名称")
+                    logger.info(f"推断的发送者名称 '{possible_sender}' 匹配用户列表中的主名称", extra={'save_to_file': True})
                     return possible_sender
                 
                 # 检查别名
                 if 'aliases' in user and user['aliases']:
                     for alias in user['aliases']:
                         if possible_sender == alias:
-                            logger.info(f"推断的发送者名称 '{possible_sender}' 匹配用户 '{user['name']}' 的别名")
+                            logger.info(f"推断的发送者名称 '{possible_sender}' 匹配用户 '{user['name']}' 的别名", extra={'save_to_file': True})
                             return user['name']  # 返回主名称而不是别名
         
-        logger.info(f"推断的发送者名称 '{possible_sender}' 不在配置的用户名列表中，将使用默认用户名")
+        logger.info(f"推断的发送者名称 '{possible_sender}' 不在配置的用户名列表中，将使用默认用户名", extra={'save_to_file': True})
         return None  # 如果没有匹配，返回None
