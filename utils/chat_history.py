@@ -171,14 +171,12 @@ class ChatHistoryManager:
                 if sender == Config.DEFAULT_USER_NAME:
                     logger.info(f"未知用户提出向角色'{self.current_role}'提出的问题'{question}'与最近{check_length}轮对话中问题'{chat['question']}'相似，不再重复发送", extra={'save_to_file': True})
                     return True
-                
-                # 如果提供了发送者，需要检查发送者和角色是否都相同（或之前已经有未知用户问过相同角色相似问题）
-                if (chat['sender'] == sender or chat['sender'] == Config.DEFAULT_USER_NAME) and chat['role'] == self.current_role:
-                    logger.info(f"用户'{sender}'向角色'{self.current_role}'提出的问题'{question}'与其最近{check_length}轮对话中的问题'{chat['question']}'相似，不再重复发送", extra={'save_to_file': True})
-                    return True
                 else:
-                    # 即使问题相似，但如果发送者或角色不同，则不视为重复
+                    # 即使问题相似，但如果发送者或角色不同，则不视为重复（但如果之前已经有未知用户问过相同角色相似问题，不再重复回答）
                     if chat['sender'] != sender:
+                        if chat['sender'] == Config.DEFAULT_USER_NAME:
+                            logger.info(f"用户'{sender}'向角色'{self.current_role}'提出的问题'{question}'与其最近{check_length}轮对话中的问题'{chat['question']}'相似，不再重复发送", extra={'save_to_file': True})
+                            return True
                         logger.info(f"问题'{question}'虽与历史中的'{chat['question']}'相似，但发送者不同（当前：{sender}，历史：{chat['sender']}），允许回答", extra={'save_to_file': True})
                     elif chat['role'] != self.current_role:
                         logger.info(f"问题'{question}'虽与历史中的'{chat['question']}'相似，但角色不同（当前：{self.current_role}，历史：{chat['role']}），允许回答", extra={'save_to_file': True})
