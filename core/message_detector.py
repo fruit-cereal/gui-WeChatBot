@@ -99,7 +99,7 @@ class MessageDetector:
                     if after_trigger != self.last_message:
                         # 检查问题是否在历史记录中已经出现过（考虑发送者）
                         if self.chat_history_manager.is_question_already_answered(after_trigger, sender):
-                            logger.info(f"重复问题检查未通过，不再重复回答", extra={'save_to_file': True})
+                            logger.info(f"当前问题'{after_trigger}'重复问题检查未通过，继续检查后续问题", extra={'save_to_file': True})
                             continue  # 继续检查后续问题，而不是直接返回None
                         
                         self.last_message = after_trigger
