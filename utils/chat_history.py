@@ -146,7 +146,7 @@ class ChatHistoryManager:
         # 如果相似度超过阈值，认为是相似问题
         return similarity > 0.8
     
-    def is_question_already_answered(self, question, sender=None):
+    def is_question_already_answered(self, question, sender):
         """检查问题是否在历史记录中已经出现过
         
         Args:
