@@ -97,9 +97,10 @@ class MessageDetector:
                     logger.info(f"检测到触发词 {trigger_word}，发送者: {sender}，问题: {after_trigger}", extra={'save_to_file': True})
                     # 重复问题检查
                     if self.chat_history_manager.is_question_already_answered(after_trigger, sender):
-                        logger.info(f"当前问题'{after_trigger}'重复问题检查未通过，继续检查后续问题", extra={'save_to_file': True})
-                        continue  # 继续检查后续问题，而不是直接返回None
-
-                    return sender, after_trigger
+                        logger.info(f"当前问题'{after_trigger}'重复问题检查未通过，不再回答", extra={'save_to_file': True})
+                        return None, None
+                    else:
+                        logger.info(f"当前问题'{after_trigger}'重复问题检查通过，允许回答", extra={'save_to_file': True})
+                        return sender, after_trigger
         
         return None, None

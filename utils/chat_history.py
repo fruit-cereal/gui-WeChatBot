@@ -184,5 +184,4 @@ class ChatHistoryManager:
                         else:
                             logger.info(f"问题'{question}'与历史中的'{chat['question']}'相似，且发送者相同（当前：{sender}，历史：{chat['sender']}），不再重复回答", extra={'save_to_file': True})
                             return True
-        logger.info(f"重复问题检查通过，允许回答", extra={'save_to_file': True})
         return False
